@@ -1,0 +1,25 @@
+FROM public.ecr.aws/lambda/provided:al2023 as builder
+
+# Install necessary packages
+RUN yum update -y && \
+    yum install -y \
+    wget \
+    unzip \
+    tar \
+    gzip \
+    xz
+
+# Download and install Chrome
+RUN mkdir -p /opt/chrome && \
+    wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm && \
+    yum install -y ./google-chrome-stable_current_x86_64.rpm && \
+    rm google-chrome-stable_current_x86_64.rpm
+
+# Create final minimal image
+FROM scratch
+
+# Copy Chrome and its dependencies
+COPY --from=builder /opt/google/chrome /opt/google/chrome
+COPY --from=builder /usr/lib64 /lib64
+
+WORKDIR / 

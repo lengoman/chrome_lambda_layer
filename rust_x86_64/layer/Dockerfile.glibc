@@ -1,0 +1,46 @@
+FROM amazonlinux:2023 as builder
+
+# Install build dependencies
+RUN dnf update -y && \
+    dnf groupinstall -y "Development Tools" && \
+    dnf install -y \
+    wget \
+    tar \
+    gzip \
+    bison \
+    python3 \
+    texinfo \
+    && dnf clean all
+
+# Install newer make version
+WORKDIR /tmp
+RUN wget https://ftp.gnu.org/gnu/make/make-4.4.1.tar.gz && \
+    tar xf make-4.4.1.tar.gz && \
+    cd make-4.4.1 && \
+    ./configure && \
+    make && \
+    make install && \
+    cd .. && \
+    rm -rf make-4.4.1*
+
+# Build GLIBC
+WORKDIR /build
+RUN wget https://ftp.gnu.org/gnu/glibc/glibc-2.29.tar.gz && \
+    tar xf glibc-2.29.tar.gz && \
+    mkdir glibc-build && \
+    cd glibc-build && \
+    ../glibc-2.29/configure \
+        --prefix=/output \
+        --host=x86_64-linux-gnu \
+        --build=x86_64-linux-gnu \
+        --enable-static-nss && \
+    make -j$(nproc) && \
+    make install && \
+    cd .. && \
+    rm -rf glibc-2.29* glibc-build
+
+# Create final minimal image
+FROM scratch
+COPY --from=builder /output/lib64 /lib64
+WORKDIR /
+CMD ["/lib64/ld-2.29.so"] 

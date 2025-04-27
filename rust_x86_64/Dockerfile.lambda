@@ -1,0 +1,32 @@
+FROM public.ecr.aws/lambda/provided:al2 as builder
+
+# Install Rust and cargo-lambda
+RUN yum update -y && \
+    yum groupinstall -y "Development Tools" && \
+    yum install -y \
+    gcc \
+    openssl-devel \
+    glibc-devel.x86_64 \
+    && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Install cargo-lambda
+RUN cargo install cargo-lambda
+
+WORKDIR /usr/src/app
+COPY . .
+
+# Build for Lambda using cargo-lambda
+RUN cargo lambda build --release --target x86_64-unknown-linux-gnu
+
+# Set up the runtime
+FROM public.ecr.aws/lambda/provided:al2
+
+# Copy the binary from cargo-lambda build
+COPY --from=builder /usr/src/app/target/lambda/x86_64-unknown-linux-gnu/release/bootstrap /var/runtime/bootstrap
+
+# Set permissions
+RUN chmod 755 /var/runtime/bootstrap
+
+# Set the entrypoint
+ENTRYPOINT ["/var/runtime/bootstrap"] 

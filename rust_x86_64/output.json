@@ -1,0 +1,1 @@
+{"errorType":"&alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync>","errorMessage":"Input/Output error while resolving websocket URL from browser process, stderr: BrowserStderr(\"/opt/chromium/bin/chromium: error while loading shared libraries: libnspr4.so: cannot open shared object file: No such file or directory\\n\"): unexpected end of stream"}
